@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "LSGameplayAbility.h"
 #include "LastStand/LastStandProjectile.h"
+#include "LSAT_PlayMontageAndWaitForEvent.h"
 #include "LSGA_FireProjectile.generated.h"
 
 /**
@@ -22,7 +23,18 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TSubclassOf<ALastStandProjectile> ProjectileClass;
 
-	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UAnimMontage* ShootMontage;
 
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags = nullptr, const FGameplayTagContainer* TargetTags = nullptr, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+
+	UFUNCTION()
+	void OnCancelled(FGameplayTag EventTag, FGameplayEventData EventData);
+
+	UFUNCTION()
+	void OnCompleted(FGameplayTag EventTag, FGameplayEventData EventData);
+
+	UFUNCTION(blueprintcallable)
+	void EventReceived(FGameplayTag EventTag, FGameplayEventData EventData);
+
 };

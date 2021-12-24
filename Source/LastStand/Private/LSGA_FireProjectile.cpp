@@ -12,20 +12,44 @@ ULSGA_FireProjectile::ULSGA_FireProjectile()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor; //Each ASC only has one instance of the GameplayAbility that is reused between activations.
 	AbilityInputID = ELSAbilityInputID::Projectile; //Bind to Right mouse click.
+
+	FGameplayTag Ability1Tag = FGameplayTag::RequestGameplayTag(FName("Ability.Skill.Ability1"));
+	AbilityTags.AddTag(Ability1Tag);
+	ActivationOwnedTags.AddTag(Ability1Tag);
+
+	ActivationBlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.Skill")));
 }
 
-void ULSGA_FireProjectile::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
-{
-	//Check if player can commit ability.
-	//CommitAbility checks for costs and Cooldowns.
-	//If we only check on server we guarantee CD verification on server side.
-	//(Hey this might not be the best implemantion or it might not even be working as I suppose. Please let me know ;))
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo) || !HasAuthority(&ActivationInfo))
-	{
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
-	}
 
-	if (HasAuthority(&ActivationInfo)) //Guarantee only server is activating the ability.
+
+bool ULSGA_FireProjectile::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
+{
+	if (GEngine) //Fastest way I could find to show Cooldown. Of course it would not be a solution to a shipping project. Would most likely call this in UI.
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Yellow, FString::Printf(TEXT("Player: %s Skill CD: %f"), *ActorInfo->OwnerActor->GetName(), GetCooldownTimeRemaining()));
+	}
+	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
+	{
+		return false;
+	}
+	return true;
+}
+
+void ULSGA_FireProjectile::OnCancelled(FGameplayTag EventTag, FGameplayEventData EventData)
+{
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+}
+
+void ULSGA_FireProjectile::OnCompleted(FGameplayTag EventTag, FGameplayEventData EventData)
+{
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+}
+
+void ULSGA_FireProjectile::EventReceived(FGameplayTag EventTag, FGameplayEventData EventData)
+{
+
+
+	if (GetOwningActorFromActorInfo()->GetLocalRole() == ROLE_Authority) //Guarantee only server is activating the ability.
 	{
 
 		ALastStandCharacter* Player = Cast<ALastStandCharacter>(GetAvatarActorFromActorInfo());
@@ -41,22 +65,7 @@ void ULSGA_FireProjectile::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 		FActorSpawnParameters SpawnParameters;
 		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		//Spawn projectile
-		ALastStandProjectile* Projectile = GetWorld()->SpawnActorDeferred<ALastStandProjectile>(ProjectileClass, MuzzleTransform, GetOwningActorFromActorInfo(),Player, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		ALastStandProjectile* Projectile = GetWorld()->SpawnActorDeferred<ALastStandProjectile>(ProjectileClass, MuzzleTransform, GetOwningActorFromActorInfo(), Player, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 		Projectile->FinishSpawning(MuzzleTransform);
 	}
-
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true); //EndAbility
-}
-
-bool ULSGA_FireProjectile::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
-{
-	if (GEngine) //Fastest way I could find to show Cooldown. Of course it would not be a solution to a shipping project. Would most likely call this in UI.
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Player: %s Skill CD: %f"), *ActorInfo->OwnerActor->GetName(), GetCooldownTimeRemaining()));
-	}
-	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
-	{
-		return false;
-	}
-	return true;
 }

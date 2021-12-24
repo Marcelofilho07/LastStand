@@ -20,7 +20,7 @@ UCLASS(config=Game)
 class ALastStandCharacter : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
-
+public:
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(VisibleDefaultsOnly, Category=Mesh)
 	USkeletalMeshComponent* Mesh1P;
