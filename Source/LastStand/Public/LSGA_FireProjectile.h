@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "LSGameplayAbility.h"
 #include "LastStand/LastStandProjectile.h"
-#include "LSAT_PlayMontageAndWaitForEvent.h"
 #include "LSGA_FireProjectile.generated.h"
 
 /**
